@@ -39,3 +39,7 @@ setup/win32/static/postgresql*.exe
 /man/
 /share/
 /src/
+
+odoo_env/
+
+credentials.json

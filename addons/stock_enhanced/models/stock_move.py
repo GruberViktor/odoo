@@ -1,5 +1,6 @@
 import logging
-import woocommerce
+import requests
+import json
 
 from odoo import SUPERUSER_ID, _, api, fields, models
 from odoo.exceptions import UserError
@@ -50,12 +51,6 @@ class StockMove(models.Model):
         _logger.error(str(self.is_done) + " " + str(self.lot_ids))
         return res
 
-# class BatchUpdate(models.Model):
-#     _name = "stock.production.lot.update"
-#     _order = 'sequence, id'
-
-
-
 
 class StockQuant(models.Model):
     _inherit = "stock.quant"
@@ -65,46 +60,30 @@ class StockQuant(models.Model):
         if "inventory_quantity" in vals:
             if getattr(self, "lot_id", False):
                 if getattr(self.lot_id, 'use_date', False):
-                    batch_sync(self.lot_id)
+                    batch_sync([self.lot_id])
         return res
 
 
-def batch_sync(lot):
+def batch_sync(lots):
     # Check if lot is list or lot. act accordingly
-    if not lot.product_id.default_code or not lot.use_date:
+    if type(lots) != list and len(lots) < 1:
+        return
+    if not lots[0].product_id.default_code or not lots[0].use_date:
         return
 
-    _credentials = [ 
-        {
-            "url": "https://staging.fermentationculture.eu",
-            "consumer_key": "ck_920046968f9abe2d853b449e667bad8f9f7e8c00",
-            "consumer_secret": "cs_ecc80b09d32fd448085401d0207e0a140221e453"
-        },
-        {
-            "url": "https://staging.luvifermente.eu",
-            "consumer_key": "ck_e870d5282dceec9e2577fc87e8a295b52b548f3d",
-            "consumer_secret": "cs_67b496ea79f9c78623275db91d9a7dbbf1040892"
-        }]
-    
-    _shops = []
-    for _cred in _credentials:
-        _shops.append(
-            woocommerce.API(
-                url= _cred["url"], 
-                consumer_key= _cred["consumer_key"], 
-                consumer_secret= _cred["consumer_secret"],
-                wp_api= True,
-                version= "wc/v3",
-                timeout= 40
-            )
+    data = {
+        'origin': 'OD',
+        'batches': []
+    }
+    for lot in lots:
+        data['batches'].append(
+            {
+                'batch_id': lot.name,
+                'product_sku': lot.product_id.default_code,
+                'quantity': lot.product_qty,
+                'date_expiry': lot.use_date.isoformat(),
+            }
         )
 
-    data = {
-        'product_sku': lot.product_id.default_code,
-        'quantity': lot.product_qty,
-        'date_expiry': lot.use_date.isoformat()
-    }
+    _logger.error( requests.post('https://batch-api.luvifermente.eu', json=data, auth=(credentials["batch_api"]["user"], credentials["batch_api"]["password"]) ).json() )
 
-    for shop in _shops: 
-
-        shop.put("batches/id/" + lot.name, data)
