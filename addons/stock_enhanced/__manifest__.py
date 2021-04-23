@@ -8,6 +8,9 @@
     'description': "Verbesserte Funktionen",
     'depends': ['stock', 'product', 'barcodes', 'digest'],
     'category': 'Inventory/Inventory',
+    'data': [
+        'report/mrp_production_templates.xml',
+    ],
     'installable': True,
     'application': False,
     'auto_install': False,
