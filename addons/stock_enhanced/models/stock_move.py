@@ -73,10 +73,8 @@ class StockMove(models.Model):
 
     def write(self, vals):
         res = OStockMove.write(self, vals)
-        if self.lot_ids:
-            # if self._last_id != self.id:
-            #     type(self)._last_id = self.id
-            batch_sync(self.lot_ids)
+        # if self.lot_ids and self.product_id.default_code:
+        batch_sync(self.lot_ids)
         return res
 
 
@@ -119,7 +117,7 @@ def batch_sync(lots):
                 'batch_id': lot.name,
                 'product_sku': lot.product_id.default_code,
                 'quantity': lot.product_qty,
-                'date_expiry': lot.use_date.isoformat(),
+                'date_expiry': lot.removal_date.isoformat(),
             }
         )
 

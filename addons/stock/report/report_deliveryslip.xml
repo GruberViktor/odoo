@@ -14,7 +14,7 @@
 
                 <div class="page">
                     <h2>
-                        <span t-field="o.name"/>
+                        Lieferschein <span t-field="o.name"/>
                     </h2>
                     <div class="row mt32 mb32">
                         <div t-if="o.origin" class="col-auto" name="div_origin">

@@ -2,11 +2,11 @@
 <odoo>
     <template id="report_mrporder_inherit" inherit_id="mrp.report_mrporder">
         <xpath expr="//div[@class='page']" position="replace">
-            <div class="page">
+            <div class="page" style="font-size: 1.5em">
                 <div class="oe_structure"/>
                 <div class="row mb32">
-                    <div class="col-7">
-                        <h1><span t-field="o.product_id"/></h1>
+                    <div class="col-12">
+                        <h1 style="font-size: 2em"><span t-field="o.product_id"/></h1>
                         <strong>Dokument: </strong><span t-field="o.name"/><br/>
                         <strong>Charge: </strong><span t-field="o.lot_producing_id"/>
                     </div>
@@ -17,7 +17,7 @@
                     </div> -->
                 </div>
                 <div class="row mt32 mb32">
-                    <div class="col-3" t-if="o.origin">
+                    <div class="col-12" t-if="o.origin">
                         <strong>Source Document:</strong><br/>
                         <span t-field="o.origin"/>
                     </div>
@@ -40,8 +40,7 @@
                     <div class="col-12">
                         <strong>Start:</strong>
                         <span t-field="o.date_finished"/>
-                    </div>
-                    <div class="col-12">
+                        <br/>
                         <strong>Produzierte Menge:</strong>
                         <span t-field="o.product_qty"/>
                         <span t-field="o.product_uom_id.name" groups="uom.group_uom"/>

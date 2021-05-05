@@ -43,7 +43,14 @@
                                 </div>
                             </div>
                             <br/>
-                            <h1 t-field="o.name" class="mt0 float-left"/>
+                            <h1 class="mt0 float-left">
+                                Lieferschein
+                            </h1>
+                            <div class="row">
+                                <div class="col-auto">
+                                    <span t-field="o.name"/>
+                                </div>
+                            </div>
                             <div class="row mt48 mb32">
                                 <div t-if="o.origin" class="col-auto" name="div_origin">
                                     <strong>Order:</strong>
