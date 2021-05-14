@@ -18,9 +18,12 @@ from odoo.addons.stock.models.stock_production_lot import ProductionLot as OProd
 
 _logger = logging.getLogger(__name__)
 
+def log(*text):
+    text = " ".join([str(t) for t in text])
+    _logger.error(text)
+
 with open(os.path.dirname(os.path.abspath(__file__)) + "/credentials.json", "r") as file:
     credentials = json.loads(file.read())
-
 
 class StockMove(models.Model):
     _inherit = "stock.move"
@@ -36,7 +39,6 @@ class StockMove(models.Model):
             else:
                 mls = move.move_line_ids
             mls = mls.filtered(lambda ml: ml.lot_id)
-            _logger.error(mls)
             for ml in mls:
                 if ml.qty_done and ml.lot_id not in move.lot_ids:
                     move_lines_commands.append((2, ml.id))
@@ -96,8 +98,107 @@ class StockQuant(models.Model):
 class Picking(models.Model):
     _inherit = "stock.picking"
 
-    def action_done(self):
-        return self._action_done()
+    def get_orders(self):
+        state = {
+            "draft": "pending",
+            "waiting": "on-hold",
+            "confirmed": "processing",
+            "assigned": "processing",
+            "done": "completed",
+            "cancel": "canceled"
+            }
+        def _get_address(partner_id):
+            return {
+                "first_name": partner_id.name.split()[0] if partner_id.name != False else "",
+                "last_name": partner_id.name.split()[1] if partner_id.name != False else "",
+                "company": partner_id.commercial_company_name if partner_id.commercial_company_name else "",
+                "address_1": partner_id.street if partner_id.street else "",
+                "address_2": partner_id.street2 if partner_id.street2 else "",
+                "city": partner_id.city if partner_id.city else "",
+                "state": "",
+                "postcode": partner_id.zip if partner_id.zip else "",
+                "country": partner_id.country_id.code if partner_id.country_id.code else "",
+                "email": partner_id.email if partner_id.email else "",
+                "phone": partner_id.phone_sanitized if partner_id.phone_sanitized else ""
+            }
+        orders = []
+        
+        for picking in self:
+            order = {
+                "payment_method": "Rechnung",
+                "created_via": "Odoo",
+                "total": "0.00",
+                "invoice_ids": [],
+                "line_items": [],
+                "meta_data": [],
+                "fee_lines": [],
+                "customer_note": "",
+                "website": self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            }
+            
+            picking_id = isinstance(picking.id, int) and picking.id or getattr(picking, '_origin', False) and picking._origin.id
+            if picking_id:
+                picking = self.env['stock.picking'].search([('id', '=', picking_id)])
+                
+                ### Number and state ###
+                order["number"] = picking.name[7:]
+                order["id"] = picking_id
+                order["status"] = state[picking.state]
+                ### Order Total and Invcoice ###
+                if picking.sale_id:
+                    order["total"] = "{:0.2f}".format(picking.sale_id.amount_total)
+                    # if picking.sale_id.invoice_ids:
+                    #     order["invoice_ids"].extend(str(picking.sale_id.invoice_ids.id))
+                ### Dates ###
+                order["date_completed"] = picking.date_done.isoformat() if picking.date_done else ""
+                order["date_created"] = picking.create_date.isoformat()
+                order["date_modified"] = picking.write_date.isoformat()
+                ### Address ###
+                order["shipping"] = _get_address(picking.partner_id)
+                order["billing"] = _get_address(picking.partner_id)
+                ### Products ###
+                moves = self.env['stock.move'].search([('picking_id', '=', picking_id)])
+                for move in moves:
+                    for line in move.move_line_ids:
+                        item = {
+                            "name": line.product_id.name,
+                            "quantity": int(line.product_qty),
+                            "sku": line.product_id.default_code if line.product_id.default_code else "",
+                            "meta_data": []
+                        }
+                        if line.lot_id:
+                            item["meta_data"].append({
+                                "key": "_batch_id",
+                                "value": line.lot_id.name
+                            })
+                            item["meta_data"].append({
+                                "key": "Charge",
+                                "value": line.lot_id.name
+                            })
+                            if line.lot_id.removal_date:
+                                item["meta_data"].append({
+                                    "key": "_date_expiry",
+                                    "value": line.lot_id.removal_date.isoformat()
+                                })
+
+                        order["line_items"].append(item)
+                ### Meta Data ###
+                order["meta_data"].append({"key": "_order_number", "value": order["number"]})
+                order["meta_data"].append({"key": "order_notes", "value": picking.note if picking.note else ""})
+                if picking.carrier_tracking_ref:
+                    order["meta_data"].append({"key": "_tracking_code", "value": picking.carrier_tracking_ref})
+
+            
+            orders.append(order)
+
+        return orders
+
+    def set_done(self):
+        for picking in self:
+            for line in picking.move_line_ids:
+                line.qty_done = line.product_qty
+            picking.button_validate()
+        return picking.state
 
 
 def batch_sync(lots):
