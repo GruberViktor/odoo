@@ -108,9 +108,20 @@ class Picking(models.Model):
             "cancel": "canceled"
             }
         def _get_address(partner_id):
+            if partner_id.name:
+                name = partner_id.name.split()
+                if len(name) == 0:
+                    first_name, last_name = "", ""
+                elif len(name) == 1:
+                    first_name, last_name = "", name[0]
+                elif len(name) > 1:
+                    first_name, last_name = name[0], name[1]
+            else:
+                first_name, last_name = "", ""
+
             return {
-                "first_name": partner_id.name.split()[0] if partner_id.name != False else "",
-                "last_name": partner_id.name.split()[1] if partner_id.name != False else "",
+                "first_name": first_name,
+                "last_name": last_name,
                 "company": partner_id.commercial_company_name if partner_id.commercial_company_name else "",
                 "address_1": partner_id.street if partner_id.street else "",
                 "address_2": partner_id.street2 if partner_id.street2 else "",
@@ -133,13 +144,15 @@ class Picking(models.Model):
                 "meta_data": [],
                 "fee_lines": [],
                 "customer_note": "",
-                "website": self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+                "website": self.env['ir.config_parameter'].sudo().get_param('web.base.url').replace("http", "https")
             }
             
             picking_id = isinstance(picking.id, int) and picking.id or getattr(picking, '_origin', False) and picking._origin.id
             if picking_id:
                 picking = self.env['stock.picking'].search([('id', '=', picking_id)])
-                
+                if picking.picking_type_id.id != 2:
+                    continue
+
                 ### Number and state ###
                 order["number"] = picking.name[7:]
                 order["id"] = picking_id
@@ -147,8 +160,8 @@ class Picking(models.Model):
                 ### Order Total and Invcoice ###
                 if picking.sale_id:
                     order["total"] = "{:0.2f}".format(picking.sale_id.amount_total)
-                    # if picking.sale_id.invoice_ids:
-                    #     order["invoice_ids"].extend(str(picking.sale_id.invoice_ids.id))
+                    for inv in picking.sale_id.invoice_ids:
+                        order["invoice_ids"].append(inv.id)
                 ### Dates ###
                 order["date_completed"] = picking.date_done.isoformat() if picking.date_done else ""
                 order["date_created"] = picking.create_date.isoformat()
@@ -161,7 +174,7 @@ class Picking(models.Model):
                 for move in moves:
                     for line in move.move_line_ids:
                         item = {
-                            "name": line.product_id.name,
+                            "name": line.product_id.display_name,
                             "quantity": int(line.product_qty),
                             "sku": line.product_id.default_code if line.product_id.default_code else "",
                             "meta_data": []
@@ -180,6 +193,10 @@ class Picking(models.Model):
                                     "key": "_date_expiry",
                                     "value": line.lot_id.removal_date.isoformat()
                                 })
+                                item["meta_data"].append({
+                                    "key": "MHD",
+                                    "value": line.lot_id.removal_date.strftime("%d.%m.%Y")
+                                })
 
                         order["line_items"].append(item)
                 ### Meta Data ###
@@ -187,7 +204,6 @@ class Picking(models.Model):
                 order["meta_data"].append({"key": "order_notes", "value": picking.note if picking.note else ""})
                 if picking.carrier_tracking_ref:
                     order["meta_data"].append({"key": "_tracking_code", "value": picking.carrier_tracking_ref})
-
             
             orders.append(order)
 
