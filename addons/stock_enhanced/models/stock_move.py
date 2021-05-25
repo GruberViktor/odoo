@@ -170,15 +170,18 @@ class Picking(models.Model):
                 order["shipping"] = _get_address(picking.partner_id)
                 order["billing"] = _get_address(picking.partner_id)
                 ### Products ###
-                moves = self.env['stock.move'].search([('picking_id', '=', picking_id)])
-                for move in moves:
+                # moves = self.env['stock.move'].search([('picking_id', '=', picking_id)])
+                # for move in moves:
+                for move in picking.move_ids_without_package:
                     for line in move.move_line_ids:
                         item = {
                             "name": line.product_id.display_name,
-                            "quantity": int(line.product_qty),
+                            "quantity": int(move.product_qty),
+                            "quantity_available" = int(line.product_qty)
                             "sku": line.product_id.default_code if line.product_id.default_code else "",
                             "meta_data": []
                         }
+                        
                         if line.lot_id:
                             item["meta_data"].append({
                                 "key": "_batch_id",
