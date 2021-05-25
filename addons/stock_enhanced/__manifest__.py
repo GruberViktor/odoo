@@ -10,6 +10,7 @@
     'category': 'Inventory/Inventory',
     'data': [
         'report/mrp_production_templates.xml',
+        'views/mail_notification_paynow.xml'
     ],
     'installable': True,
     'application': False,

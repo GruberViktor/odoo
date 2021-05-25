@@ -1,0 +1,225 @@
+{
+    "id": 49843,
+    "parent_id": 0,
+    "status": "processing",
+    "currency": "EUR",
+    "version": "4.9.2",
+    "prices_include_tax": true,
+    "date_created": "2021-05-06T14:16:21",
+    "date_modified": "2021-05-06T14:16:26",
+    "discount_total": "0.00",
+    "discount_tax": "0.00",
+    "shipping_total": "10.91",
+    "shipping_tax": "0.00",
+    "cart_tax": "0.00",
+    "total": "83.64",
+    "total_tax": "0.00",
+    "customer_id": 0,
+    "order_key": "wc_order_ptixUiZBowXXW",
+    "billing": {
+        "first_name": "Leonardo",
+        "last_name": "Fonseca",
+        "company": "hi\u0161a franko d.o.o.",
+        "address_1": "staro selo 1",
+        "address_2": "hisa franko",
+        "city": "Kobarid",
+        "state": "",
+        "postcode": "5222",
+        "country": "SI",
+        "email": "leinfonseca@gmail.com",
+        "phone": "51486645"
+    },
+    "shipping": {
+        "first_name": "Leonardo",
+        "last_name": "Fonseca",
+        "company": "hi\u0161a franko d.o.o.",
+        "address_1": "staro selo 1",
+        "address_2": "hisa franko",
+        "city": "Kobarid",
+        "state": "",
+        "postcode": "5222",
+        "country": "SI"
+    },
+    "payment_method": "stripe",
+    "payment_method_title": "Credit Card",
+    "transaction_id": "ch_1Io67wLnbaZTAM3ZovnGm3oo",
+    "customer_ip_address": "89.212.167.23",
+    "customer_user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 11_2_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.114 Safari/537.36",
+    "created_via": "checkout",
+    "customer_note": "",
+    "date_completed": null,
+    "date_paid": "2021-05-06T14:16:26",
+    "cart_hash": "6ef6050fde28044eeb41aeca04d87a01",
+    "number": "6527",
+    "meta_data": [{
+        "id": 561499,
+        "key": "_order_number",
+        "value": "6527"
+    }, {
+        "id": 561537,
+        "key": "_billing_business_consumer_selector",
+        "value": "business"
+    }, {
+        "id": 561538,
+        "key": "_billing_sk_company_id",
+        "value": ""
+    }, {
+        "id": 561539,
+        "key": "_billing_sk_company_dic",
+        "value": ""
+    }, {
+        "id": 561540,
+        "key": "_billing_cz_company_id",
+        "value": ""
+    }, {
+        "id": 561541,
+        "key": "_billing_eu_vat",
+        "value": "71034625"
+    }, {
+        "id": 561542,
+        "key": "_billing_es_nif_nie",
+        "value": ""
+    }, {
+        "id": 561543,
+        "key": "_billing_it_codice_fiscale",
+        "value": ""
+    }, {
+        "id": 561544,
+        "key": "_billing_gr_business_activity",
+        "value": ""
+    }, {
+        "id": 561545,
+        "key": "_billing_it_sid_pec",
+        "value": ""
+    }, {
+        "id": 561546,
+        "key": "_billing_gr_tax_office",
+        "value": ""
+    }, {
+        "id": 561547,
+        "key": "is_vat_exempt",
+        "value": "yes"
+    }, {
+        "id": 561548,
+        "key": "_tracking",
+        "value": "YES"
+    }, {
+        "id": 561549,
+        "key": "terms",
+        "value": "on"
+    }, {
+        "id": 561551,
+        "key": "_woo_ml_already_subscribed",
+        "value": "1"
+    }, {
+        "id": 561552,
+        "key": "_woo_ml_subscriber_updated",
+        "value": "1"
+    }, {
+        "id": 561553,
+        "key": "_stripe_customer_id",
+        "value": "cus_JQy4xoaKUC1c9y"
+    }, {
+        "id": 561554,
+        "key": "_stripe_source_id",
+        "value": "src_1Io67sLnbaZTAM3Z7Q6ZSzIX"
+    }, {
+        "id": 561555,
+        "key": "_stripe_intent_id",
+        "value": "pi_1Io67vLnbaZTAM3ZO6cU2mwX"
+    }, {
+        "id": 561556,
+        "key": "_stripe_charge_captured",
+        "value": "yes"
+    }, {
+        "id": 561557,
+        "key": "_stripe_fee",
+        "value": "1.42"
+    }, {
+        "id": 561558,
+        "key": "_stripe_net",
+        "value": "82.22"
+    }, {
+        "id": 561559,
+        "key": "_stripe_currency",
+        "value": "EUR"
+    }, {
+        "id": 561566,
+        "key": "_batch_reduced",
+        "value": "yes"
+    }, {
+        "id": 561568,
+        "key": "_bewpi_invoice_date",
+        "value": "2021-05-06 14:16:27"
+    }, {
+        "id": 561569,
+        "key": "_bewpi_invoice_number",
+        "value": "1554"
+    }, {
+        "id": 561570,
+        "key": "_bewpi_invoice_pdf_path",
+        "value": "2021/FC-2021-1554.pdf"
+    }, {
+        "id": 561571,
+        "key": "bewpi_pdf_invoice_sent",
+        "value": "1"
+    }],
+    "line_items": [{
+        "id": 32007,
+        "name": "Koji spores for 200 kg - Barley",
+        "product_id": 3940,
+        "variation_id": 3947,
+        "quantity": 1,
+        "tax_class": "reduced-rate",
+        "subtotal": "72.73",
+        "subtotal_tax": "0.00",
+        "total": "72.73",
+        "total_tax": "0.00",
+        "taxes": [],
+        "meta_data": [{
+            "id": 250636,
+            "key": "strain",
+            "value": "Barley",
+            "display_key": "Strain",
+            "display_value": "Barley"
+        }],
+        "sku": "",
+        "price": 72.73,
+        "parent_name": "Koji spores for 200 kg"
+    }],
+    "tax_lines": [],
+    "shipping_lines": [{
+        "id": 32008,
+        "method_title": "Letter / Parcel (&lt; 2 kg)",
+        "method_id": "flat_rate",
+        "instance_id": "11",
+        "total": "10.91",
+        "total_tax": "0.00",
+        "taxes": [],
+        "meta_data": [{
+            "id": 250642,
+            "key": "Items",
+            "value": "Koji spores for 200 kg - Barley &times; 1",
+            "display_key": "Items",
+            "display_value": "Koji spores for 200 kg - Barley &times; 1"
+        }]
+    }],
+    "fee_lines": [],
+    "coupon_lines": [],
+    "refunds": [],
+    "date_created_gmt": "2021-05-06T12:16:21",
+    "date_modified_gmt": "2021-05-06T12:16:26",
+    "date_completed_gmt": null,
+    "date_paid_gmt": "2021-05-06T12:16:26",
+    "currency_symbol": "\u20ac",
+    "_links": {
+        "self": [{
+            "href": "https://www.fermentationculture.eu/wp-json/wc/v3/orders/49843"
+        }],
+        "collection": [{
+            "href": "https://www.fermentationculture.eu/wp-json/wc/v3/orders"
+        }]
+    },
+    "website": "https://www.fermentationculture.eu",
+    "nth_order": 3
+}
