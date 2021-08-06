@@ -1,6 +1,7 @@
 
 .o_background_footer, .o_background_header, .o_report_layout_background {
-    color: gray('700');
+    // color: gray('700');
+    color: black;
 }
 .o_background_header {
     min-width: 900px;
@@ -55,7 +56,8 @@
         color: $o-default-report-secondary-color
     }
     tbody {
-        color: gray('700');
+        // color: gray('700');
+        color: black;
         tr {
             &:nth-child(odd) {
                 background-color: rgba(220, 205, 216, 0.2);

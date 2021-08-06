@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record model="ir.ui.view" id="view_partner_form">
+        <field name="name">stock_enhanced.view_partner_form</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='child_ids']" position="attributes">
+                <attribute name="context">{'default_parent_id': active_id, 'default_street': street, 'default_street2': street2, 'default_city': city, 'default_state_id': state_id, 'default_zip': zip, 'default_country_id': country_id, 'default_lang': None, 'default_user_id': user_id, 'default_type': 'other', 'default_shop_name': name}</attribute>
+            </xpath>
+            <xpath expr="//field[@name='child_ids']/form/sheet/group/group[1]/field[@name='name']" position="before">
+                <field name="shop_name" string="Name des Geschäfts"
+                    attrs="{'invisible': [('type', '!=', 'shop')], 'required': [('type', '=', 'shop')]}" />
+                <field name="latitude" string="Latitude" attrs="{'invisible': [('type', '!=', 'shop')]}" />
+                <field name="longitude" string="Longitude" attrs="{'invisible': [('type', '!=', 'shop')]}" />
+            </xpath>
+            <xpath expr="//div[@class='oe_kanban_details']/field[@name='name']" position="before">
+                <div t-if="record.type.raw_value == 'shop'">Verkaufsort</div>
+            </xpath>
+            <!-- <xpath expr="//notebook/page[@name='sales_purchases']/group/group[@name='sale']" position="inside">
+                <field name="shipping_note" attrs="{'invisible': [('type', '!=', '')]}"/> -->
+            <xpath expr="//field[@name='child_ids']/form/sheet/group/group[1]/field[@name='comment']" position="after">
+                <field name="shipping_note" string="Liefernotiz" attrs="{'invisible': [('type', '!=', 'delivery')]}" />
+            </xpath>
+        </field>
+    </record>
+
+    <record model="ir.ui.view" id="res_partner_kanban_view">
+        <field name="name">stock_enhanced.res_partner_kanban_view</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.res_partner_kanban_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//t[@t-if='!record.is_company.raw_value']/t[1]" position="after">
+                <t t-elif="record.type.raw_value === 'shop'" t-set="placeholder" t-value="'/stock_enhanced/static/store.png'"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

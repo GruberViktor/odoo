@@ -6,11 +6,12 @@
     'version': '0.1',
     'summary': '-',
     'description': "Verbesserte Funktionen",
-    'depends': ['stock', 'product', 'barcodes', 'digest'],
+    'depends': ['stock', 'product', 'barcodes', 'digest', 'base',],
     'category': 'Inventory/Inventory',
     'data': [
         'report/mrp_production_templates.xml',
-        'views/mail_notification_paynow.xml'
+        'views/mail_notification_paynow.xml',
+        'views/res_partner_views.xml'
     ],
     'installable': True,
     'application': False,

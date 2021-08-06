@@ -3,6 +3,7 @@ import requests
 import json
 import time
 import os
+import datetime
 
 
 from odoo import SUPERUSER_ID, _, api, fields, models
@@ -98,6 +99,13 @@ class StockQuant(models.Model):
 class Picking(models.Model):
     _inherit = "stock.picking"
 
+    @api.model
+    def create(self, values):
+        res = super(Picking, self).create(values)
+        if res.partner_id.shipping_note:
+            res.note = res.partner_id.shipping_note
+        return res
+
     def get_orders(self):
         state = {
             "draft": "pending",
@@ -149,7 +157,7 @@ class Picking(models.Model):
             
             picking_id = isinstance(picking.id, int) and picking.id or getattr(picking, '_origin', False) and picking._origin.id
             if picking_id:
-                picking = self.env['stock.picking'].search([('id', '=', picking_id)])
+                picking = self.env['stock.picking'].with_context(lang='de_DE').search([('id', '=', picking_id)])
                 if picking.picking_type_id.id != 2:
                     continue
 
@@ -157,6 +165,13 @@ class Picking(models.Model):
                 order["number"] = picking.name[7:]
                 order["id"] = picking_id
                 order["status"] = state[picking.state]
+                order["scheduled_date"] = picking.scheduled_date
+                if picking.state not in ["draft", "waiting", "done", "cancel"]:
+                    if picking.scheduled_date.date() > datetime.date.today():
+                        order["status"] = "on-hold"
+                    else:
+                        order["status"] = "processing"
+                
                 ### Order Total and Invcoice ###
                 if picking.sale_id:
                     order["total"] = "{:0.2f}".format(picking.sale_id.amount_total)
@@ -170,18 +185,16 @@ class Picking(models.Model):
                 order["shipping"] = _get_address(picking.partner_id)
                 order["billing"] = _get_address(picking.partner_id)
                 ### Products ###
-                # moves = self.env['stock.move'].search([('picking_id', '=', picking_id)])
-                # for move in moves:
-                for move in picking.move_ids_without_package:
+                for move in picking.move_ids_without_package: 
+                    item = {
+                        "name": move.product_id.display_name,
+                        "quantity": int(move.product_uom_qty),
+                        "quantity_available": move.forecast_availability,
+                        "sku": move.product_id.default_code if move.product_id.default_code else "",
+                        "meta_data": [],
+                        "move_line_ids": len(move.move_line_ids)
+                    }
                     for line in move.move_line_ids:
-                        item = {
-                            "name": line.product_id.display_name,
-                            "quantity": int(move.product_qty),
-                            "quantity_available" = int(line.product_qty)
-                            "sku": line.product_id.default_code if line.product_id.default_code else "",
-                            "meta_data": []
-                        }
-                        
                         if line.lot_id:
                             item["meta_data"].append({
                                 "key": "_batch_id",
@@ -201,7 +214,9 @@ class Picking(models.Model):
                                     "value": line.lot_id.removal_date.strftime("%d.%m.%Y")
                                 })
 
-                        order["line_items"].append(item)
+                    order["line_items"].append(item)
+
+
                 ### Meta Data ###
                 order["meta_data"].append({"key": "_order_number", "value": order["number"]})
                 order["meta_data"].append({"key": "order_notes", "value": picking.note if picking.note else ""})
@@ -222,24 +237,27 @@ class Picking(models.Model):
 
 def batch_sync(lots):
     # Check if lot is list or lot. act accordingly
-    if type(lots) != list and len(lots) < 1:
-        return
-    if not lots[0].product_id.default_code or not lots[0].use_date:
-        return
+    try:
+        if type(lots) != list and len(lots) < 1:
+            return
+        if not lots[0].product_id.default_code or not lots[0].use_date:
+            return
 
-    data = {
-        'origin': 'OD',
-        'batches': []
-    }
-    for lot in lots:
-        data['batches'].append(
-            {
-                'batch_id': lot.name,
-                'product_sku': lot.product_id.default_code,
-                'quantity': lot.product_qty,
-                'date_expiry': lot.removal_date.isoformat(),
-            }
-        )
+        data = {
+            'origin': 'OD',
+            'batches': []
+        }
+        for lot in lots:
+            data['batches'].append(
+                {
+                    'batch_id': lot.name,
+                    'product_sku': lot.product_id.default_code,
+                    'quantity': lot.product_qty,
+                    'date_expiry': lot.removal_date.isoformat() if lot.removal_date is not False else lot.expiration_date.isoformat(),
+                }
+            )
 
-    requests.post('https://batch-api.luvifermente.eu', json=data, auth=(credentials["batch_api"]["user"], credentials["batch_api"]["password"]) )
-
+        requests.post('https://batch-api.luvifermente.eu', json=data, auth=(credentials["batch_api"]["user"], credentials["batch_api"]["password"]) )
+        
+    except:
+        pass
