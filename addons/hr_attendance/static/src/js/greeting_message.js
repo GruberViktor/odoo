@@ -75,6 +75,8 @@ var GreetingMessage = AbstractAction.extend({
         var self = this;
         var now = this.attendance.check_in.clone();
         this.return_to_main_menu = setTimeout( function() { self.do_action(self.next_action, {clear_breadcrumbs: true}); }, 5000);
+        var d = new Date();
+        self.$(".cat_image").attr("src", "hr_attendance/static/src/cat.jpg?"+d.getTime());
 
         if (now.hours() < 5) {
             this.$('.o_hr_attendance_message_message').append(_t("Good night"));
@@ -111,6 +113,8 @@ var GreetingMessage = AbstractAction.extend({
         var self = this;
         var now = this.attendance.check_out.clone();
         this.return_to_main_menu = setTimeout( function() { self.do_action(self.next_action, {clear_breadcrumbs: true}); }, 5000);
+        var d = new Date();
+        self.$(".cat_image").attr("src", "hr_attendance/static/src/cat.jpg?"+d.getTime());
 
         if(this.previous_attendance_change_date){
             var last_check_in_date = this.previous_attendance_change_date.clone();

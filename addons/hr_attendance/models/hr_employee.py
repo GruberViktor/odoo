@@ -4,6 +4,8 @@
 import pytz
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+import urllib.request
+import os
 
 from odoo import models, fields, api, exceptions, _, SUPERUSER_ID
 
@@ -107,6 +109,7 @@ class HrEmployeeBase(models.AbstractModel):
         """
         employee = self.sudo().search([('barcode', '=', barcode)], limit=1)
         if employee:
+            urllib.request.urlretrieve("https://cataas.com/cat?height=300", os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', "static/src/cat.jpg")))
             return employee._attendance_action('hr_attendance.hr_attendance_action_kiosk_mode')
         return {'warning': _("No employee corresponding to Badge ID '%(barcode)s.'") % {'barcode': barcode}}
 
