@@ -11,7 +11,8 @@
     'data': [
         'report/mrp_production_templates.xml',
         'views/mail_notification_paynow.xml',
-        'views/res_partner_views.xml'
+        'views/res_partner_views.xml',
+        'views/report_invoice.xml'
     ],
     'installable': True,
     'application': False,

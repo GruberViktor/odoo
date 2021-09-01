@@ -1,9 +1,11 @@
+from threading import Timer
 import logging
 import requests
 import json
 import time
 import os
 import datetime
+from woocommerce import API
 
 
 from odoo import SUPERUSER_ID, _, api, fields, models
@@ -17,6 +19,8 @@ from odoo.addons.stock.models.stock_move import StockMove as OStockMove
 from odoo.addons.stock.models.stock_quant import StockQuant as OStockQuant
 from odoo.addons.stock.models.stock_production_lot import ProductionLot as OProductionLot
 
+
+
 _logger = logging.getLogger(__name__)
 
 def log(*text):
@@ -26,74 +30,81 @@ def log(*text):
 with open(os.path.dirname(os.path.abspath(__file__)) + "/credentials.json", "r") as file:
     credentials = json.loads(file.read())
 
+shops = {}
+for shop in credentials["shops"]:
+    if shop["url"] == "https://staging.fermentationculture.eu":
+        continue
+    shops[shop["url"]] = API(
+        url=shop["url"],
+        consumer_key=shop["consumer_key"],
+        consumer_secret=shop["consumer_secret"],
+        wp_api=True,
+        version="wc/v3",
+        timeout=20
+        )
+
+
+### Debounced, schickt den Lagerbestand.
+def call_api(args):
+    def call_it():
+        for shop in shops:
+            for arg in args:
+                sku = arg[0]
+                quantity_available = arg[1]
+                # log(shops[shop].post("products/stock_update", data).json())
+                time1 = time.time()
+                product = shops[shop].get("products", params={'sku':sku}).json()
+                if len(product) == 0:
+                    continue
+                product = product[0]
+                
+                if product['type'] == 'variation':
+                    shops[shop].put('products/'+str(product['parent_id'])+'/variations/'+str(product['id']), {'stock_quantity': quantity_available}).json()
+                else:
+                    shops[shop].put('products/'+str(product['id']), {'stock_quantity': quantity_available}).json()
+                log(f"It took {time.time()-time1} seconds")
+    try:
+        call_api.t.cancel()
+    except(AttributeError):
+        pass
+    call_api.t = Timer(1, call_it)
+    call_api.t.start()
+
+
 class StockMove(models.Model):
-    _inherit = "stock.move"
-    _last_id = 0
+    _inherit = "stock.picking"
 
-    def _set_lot_ids(self):
-        # _logger.error("_set_lot_ids Start")
-        # _logger.error(self[0].move_line_ids)
-        for move in self:
-            move_lines_commands = []
-            if move.picking_type_id.show_reserved is False:
-                mls = move.move_line_nosuggest_ids
-            else:
-                mls = move.move_line_ids
-            mls = mls.filtered(lambda ml: ml.lot_id)
-            for ml in mls:
-                if ml.qty_done and ml.lot_id not in move.lot_ids:
-                    move_lines_commands.append((2, ml.id))
-            ls = move.move_line_ids.lot_id
-            for lot in move.lot_ids:
-                if lot not in ls:
-                    move_line_vals = self._prepare_move_line_vals(quantity=0)
-                    move_line_vals['lot_id'] = lot.id
-                    move_line_vals['lot_name'] = lot.name
-                    move_line_vals['product_uom_id'] = move.product_id.uom_id.id
-                    move_line_vals['qty_done'] = self.quantity_done
-                    move_lines_commands.append((0, 0, move_line_vals))
-            move.write({'move_line_ids': move_lines_commands})
-
-        # _logger.error("End")
-        # _logger.error(self[0].move_line_ids)
-
-    @api.depends('move_line_ids', 'move_line_ids.lot_id', 'move_line_ids.qty_done')
-    def _compute_lot_ids(self):
-        # _logger.error("_compute_lot_ids Start")
-        # _logger.error(self[0].move_line_ids)
-        domain_nosuggest = [('move_id', 'in', self.ids), ('lot_id', '!=', False), '|', ('qty_done', '!=', 0.0), ('product_qty', '=', 0.0)]
-        domain_suggest = [('move_id', 'in', self.ids), ('lot_id', '!=', False), ('qty_done', '!=', 0.0)]
-        lots_by_move_id_list = []
-        for domain in [domain_nosuggest, domain_suggest]:
-            lots_by_move_id = self.env['stock.move.line'].read_group(
-                domain,
-                ['move_id', 'lot_ids:array_agg(lot_id)'], ['move_id'],
-            )
-            lots_by_move_id_list.append({by_move['move_id'][0]: by_move['lot_ids'] for by_move in lots_by_move_id})
-        for move in self:
-            move.lot_ids = lots_by_move_id_list[0 if move.picking_type_id.show_reserved else 1].get(move._origin.id, [])
-        # _logger.error("_compute_lot_ids End")
-
+    ### Schickt Lagerbestand von Produkten an die Shops bei Anlieferungen und bei abgeschlossener Produktion
     def write(self, vals):
-        res = OStockMove.write(self, vals)
-        # if self.lot_ids and self.product_id.default_code:
-        batch_sync(self.lot_ids)
-        return res
+        super().write(vals)
+        if self.picking_type_id.id in [1, 8]:
+            if self.state == "done":
+                args = []
+                for line in self.move_line_ids:
+                    args.append( (line.product_id.default_code, self.product_id.product_tmpl_id.mapped('virtual_available')[0]) )
+                call_api(args)
 
 
-class StockQuant(models.Model):
+class StockQuantInherit(models.Model):
     _inherit = "stock.quant"
 
+    ### Schickt Lagerbestand von Produkten an die Shops bei Lagerstandsverringerung und manueller Anpassung.
     def write(self, vals):
-        res = OStockQuant.write(self, vals)
-        if "inventory_quantity" in vals:
-            if getattr(self, "lot_id", False):
-                if getattr(self.lot_id, 'use_date', False):
-                    batch_sync([self.lot_id])
-                    time.sleep(1)   # Sometimes the function is called twice within a very short time. 
-                                    # The receiving servers haven't saved the batch yet, so they won't 
-                                    # update the existing one, but create a new one, resulting in duplicates.
+        res = super(StockQuantInherit, self).write(vals)
+        if self.product_id.default_code:
+            available = self.product_id.product_tmpl_id.mapped('virtual_available')[0]
+            call_api( ((self.product_id.default_code, available),) )
         return res
+
+
+class Lot(models.Model):
+    _inherit = "stock.production.lot"
+
+    ### Set Removal Date when only expiration date is supplied. Only happens in receipts.
+    def write(self, vals):
+        if not self.removal_date and vals.get('expiration_date'):
+            self.removal_date = vals['expiration_date']
+        res = super(Lot, self).write(vals)
 
 
 class Picking(models.Model):
@@ -148,6 +159,7 @@ class Picking(models.Model):
                 "created_via": "Odoo",
                 "total": "0.00",
                 "invoice_ids": [],
+                "invoice_name": "",
                 "line_items": [],
                 "meta_data": [],
                 "fee_lines": [],
@@ -177,6 +189,7 @@ class Picking(models.Model):
                     order["total"] = "{:0.2f}".format(picking.sale_id.amount_total)
                     for inv in picking.sale_id.invoice_ids:
                         order["invoice_ids"].append(inv.id)
+                        order["invoice_name"] = inv.name
                 ### Dates ###
                 order["date_completed"] = picking.date_done.isoformat() if picking.date_done else ""
                 order["date_created"] = picking.create_date.isoformat()
@@ -188,7 +201,8 @@ class Picking(models.Model):
                 for move in picking.move_ids_without_package: 
                     item = {
                         "name": move.product_id.display_name,
-                        "quantity": int(move.product_uom_qty),
+                        "quantity": move.product_uom_qty,
+                        "uom": move.product_uom.name,
                         "quantity_available": move.forecast_availability,
                         "sku": move.product_id.default_code if move.product_id.default_code else "",
                         "meta_data": [],
@@ -233,31 +247,3 @@ class Picking(models.Model):
                 line.qty_done = line.product_qty
             picking.button_validate()
         return picking.state
-
-
-def batch_sync(lots):
-    # Check if lot is list or lot. act accordingly
-    try:
-        if type(lots) != list and len(lots) < 1:
-            return
-        if not lots[0].product_id.default_code or not lots[0].use_date:
-            return
-
-        data = {
-            'origin': 'OD',
-            'batches': []
-        }
-        for lot in lots:
-            data['batches'].append(
-                {
-                    'batch_id': lot.name,
-                    'product_sku': lot.product_id.default_code,
-                    'quantity': lot.product_qty,
-                    'date_expiry': lot.removal_date.isoformat() if lot.removal_date is not False else lot.expiration_date.isoformat(),
-                }
-            )
-
-        requests.post('https://batch-api.luvifermente.eu', json=data, auth=(credentials["batch_api"]["user"], credentials["batch_api"]["password"]) )
-        
-    except:
-        pass

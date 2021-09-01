@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_invoice_document_inherit" inherit_id="account.report_invoice_document">
+        <xpath expr="//p[@name='payment_communication']" position="after">
+            <p t-if="o.partner_id.vat">
+                Steuerfreie innergemeinschaftliche Lieferung / Tax exempt intra-community supply
+            </p>
+        </xpath>
+    </template>
+</odoo>

@@ -43,3 +43,4 @@ setup/win32/static/postgresql*.exe
 /odoo_env/
 
 credentials.json
+addons/hr_attendance/static/src/cat.jpg
